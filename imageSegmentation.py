@@ -1,14 +1,13 @@
-import numpy as np
 
+import numpy as np
+from ckLogging import *
 from skimage.filters import threshold_otsu
 
-def thresholdOtsu(imageIn, showPlots=False):
-    # % Convert to double if necessary
-    imageIn = imageIn.astype(np.double)
-    # % find nonzero values (due to masking)
-    nzInd = a.ravel().nonzero(imageIn)
-
-    return level
+def thresholdOtsu(imageIn):
+    # the implementation in the original code seems
+    # unnecessarily complicated
+    notImplemented("custom otsu not implemended; using skimage.filters.")
+    return threshold_otsu(imageIn)
 """
 
 

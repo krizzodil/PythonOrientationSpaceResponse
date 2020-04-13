@@ -2,6 +2,8 @@
 from collections import UserDict
 import numpy as np
 
+from imageSegmentation import *
+
 class DefaultParams(UserDict):
     """ Based on arguments of 
     steerableAdaptiveResolutionOrientationSpaceDetector.m
@@ -115,7 +117,7 @@ class DefaultParams(UserDict):
             "sigma": 2,
 
             "adaptLengthInRegime":      True,
-            "meanThresholdMethod":      "thresholdOtsu",
+            "meanThresholdMethod":      thresholdOtsu,
             "meanThreshold":            None,
             "mask":                     np.empty(0),
             "nlmsMask":                 np.empty(0),

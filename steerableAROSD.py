@@ -1,3 +1,4 @@
+
 import logging
 import copy
 
@@ -9,7 +10,8 @@ from scipy import misc, fftpack
 from parameters import DefaultParams
 from OrientationSpaceFilter import OrientationSpaceFilter
 from ckLogging import notImplemented
-from common.imageSegmentation import thresholdOtsu
+from imageSegmentation import *
+
 
 
 def tprint(string):
@@ -43,6 +45,7 @@ def steerableAROSD(I, ip):
 
     meanResponse = a_hat[:,:,0]/a_hat.shape[2]
     if ip["diagnosticMode"]:
+        plt.figure()
         plt.imshow(meanResponse.real)
         plt.title("meanResponse")
         plt.show(block=False)
@@ -53,8 +56,11 @@ def steerableAROSD(I, ip):
             if ip["meanThresholdMethod"] == "otsu":
                 meanThresholdMethod = thresholdOtsu
             elif ip["meanThresholdMethod"] == "rosin":
+                raise NotImplementedError("thresholdRosin is not implemended")
                 meanThresholdMethod = thresholdRosin
             else:
+                raise NotImplementedError(
+                    "threshold string-eval not implemented")
                 meanThresholdMethod = eval(ip["meanThresholdMethod"])
         else:
             # % Assume this is a function
@@ -64,6 +70,16 @@ def steerableAROSD(I, ip):
     else:
         meanThreshold = ip["meanThreshold"]
 
+    if ip["diagnosticMode"]:
+        plt.figure()
+        plt.hist(meanResponse.flatten().real, 500)
+        plt.title("meanResponse Histogram")
+        plt.xlabel("meanResponse")
+        plt.ylabel("count")
+        plt.axvline(meanThreshold, color="r", linewidth=2)
+        plt.show()
+
+    # %% Masking
 
 
 
