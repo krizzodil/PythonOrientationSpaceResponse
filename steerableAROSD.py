@@ -5,6 +5,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
+from skimage import morphology
 from scipy import misc, fftpack
 
 from parameters import DefaultParams
@@ -66,25 +67,47 @@ def steerableAROSD(I, ip):
             # % Assume this is a function
             meanThresholdMethod = ip["meanThresholdMethod"]
 
-        meanThreshold = meanThresholdMethod(meanResponse)
+        meanThreshold = meanThresholdMethod(meanResponse.real)
     else:
         meanThreshold = ip["meanThreshold"]
 
     if ip["diagnosticMode"]:
         plt.figure()
-        plt.hist(meanResponse.flatten().real, 500)
+        plt.hist(meanResponse.real.flatten(), 500)
         plt.title("meanResponse Histogram")
         plt.xlabel("meanResponse")
         plt.ylabel("count")
         plt.axvline(meanThreshold, color="r", linewidth=2)
-        plt.show()
+        plt.show(block=False)
 
     # %% Masking
+    if ip["nlmsMask"] == None:
+        meanResponseMask = meanResponse > meanThreshold
+        if ip["diagnosticMode"]:
+            plt.figure()
+            plt.title("meanResponse > meanThreshold")
+            plt.imshow(meanResponseMask)
+            plt.show(block=False)
+        if ip["mask"]:
+            meanResponseMask = np.logical_and(meanResponseMask, ip["mask"])
+        if ip["diagnosticMode"]:
+            plt.figure()
+            plt.title("meanResponseMask")
+            plt.imshow(meanResponseMask)
+            plt.show(block=False)
+
+        # % For NLMS(nlmsMask)
+        meanResponseMaskDilated = morphology.binary_dilation(
+                        meanResponseMask,
+                        selem=morphology.disk(ip["maskDilationDiskRadius"])
+                        )
+
 
 
 
 if __name__ == "__main__":
     image = io.imread("CK001HelaOsmo_20_single_croped.tif")
+    image[image<0] = 0
     ip = DefaultParams()
     steerableAROSD(image, ip)
     print("End of script.")
