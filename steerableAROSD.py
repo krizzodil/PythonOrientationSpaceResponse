@@ -5,7 +5,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage import io
-from skimage import morphology
+from skimage.morphology import *
 from scipy import misc, fftpack
 
 from parameters import DefaultParams
@@ -97,10 +97,21 @@ def steerableAROSD(I, ip):
             plt.show(block=False)
 
         # % For NLMS(nlmsMask)
-        meanResponseMaskDilated = morphology.binary_dilation(
-                        meanResponseMask,
-                        selem=morphology.disk(ip["maskDilationDiskRadius"])
-                        )
+        meanResponseMaskDilated = binary_dilation(
+                                    meanResponseMask,
+                                    selem=disk(ip["maskDilationDiskRadius"])
+                                    )
+        if ip["maskFillHoles"]:
+            raise NotImplementedError("maskFillHoles not implemented")
+            #%meanResponseMaskDilated = imfill(meanResponseMaskDilated, 'holes');
+        if ip["mask"]:
+            meanResponseMaskDilated = np.logical_and(meanResponseMaskDilated,
+                                                     ip["mask"])
+        if ip["diagnosticMode"]:
+            plt.figure()
+            plt.title("meanResponseMaskDilated")
+            plt.imshow(meanResponseMaskDilated)
+            plt.show(block=False)
 
 
 
