@@ -4,8 +4,11 @@ import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import patches
+
 from skimage import io
 from skimage.morphology import *
+from skimage.measure import label, regionprops, regionprops_table
 from scipy import misc, fftpack
 
 from parameters import DefaultParams
@@ -108,18 +111,44 @@ def steerableAROSD(I, ip):
             meanResponseMaskDilated = np.logical_and(meanResponseMaskDilated,
                                                      ip["mask"])
         if ip["diagnosticMode"]:
+            diag_rp = regionprops(label(meanResponseMaskDilated))
+            areas = [region.area for region in diag_rp]
+            bboxes = [region.bbox for region in diag_rp]
+            area = max(areas)
+            index = areas.index(area)
+            bbox = bboxes[index]
+            diag_rp = diag_rp[index]
+
             plt.figure()
             plt.title("meanResponseMaskDilated")
             plt.imshow(meanResponseMaskDilated)
+            rect = plt.Rectangle((bbox[1],bbox[0]),
+                                 bbox[3]-bbox[1],
+                                 bbox[2]-bbox[0],
+                                 color="r", linewidth=1, fill=False)
+            plt.gca().add_patch(rect)
             plt.show(block=False)
 
+        nlmsMask = meanResponseMaskDilated
+    else:
+        # % User defined nlmsMask
+        nlmsMask = ip["nlmsMask"]
+        diag_rp  = regionprops(nlmsMask)[0]
+
+
+    # %% Setup orientation analysis problem
 
 
 
 if __name__ == "__main__":
-    image = io.imread("CK001HelaOsmo_20_single_croped.tif")
+    if True:
+        image = io.imread("CK001HelaOsmo_20_single.tif")
+    else:
+        image = io.imread("CK001HelaOsmo_20_single_croped.tif")
+
     image[image<0] = 0
     ip = DefaultParams()
+    ip["diagnosticMode"] = True
     steerableAROSD(image, ip)
     print("End of script.")
     plt.show()
