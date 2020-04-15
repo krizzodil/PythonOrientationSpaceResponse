@@ -15,6 +15,7 @@ from parameters import DefaultParams
 from OrientationSpaceFilter import OrientationSpaceFilter
 from ckLogging import notImplemented
 from imageSegmentation import *
+from mathfun import *
 
 
 
@@ -137,11 +138,25 @@ def steerableAROSD(I, ip):
 
 
     # %% Setup orientation analysis problem
+    nanTemplate = np.zeros(nlmsMask.shape)
+    a_hat = np.rollaxis(a_hat, 2, 0)
+    a_hat = a_hat[:, nlmsMask]
+
+    # %% Evaluate single orientation, fast easy case
+    R_res = R.getResponseAtOrderFT(ip["responseOrder"],2)
+    maximum_single_angle = nanTemplate
+
+    maximum_single_angle[nlmsMask] = wraparoundN(-np.angle(a_hat[1,:])/2 ,
+                                                  0,
+                                                  np.pi)
+
+    #nlms_single = nonLocalMaximaSuppressionPrecise(real(R_res.a),maximum_single_angle,[],[],nlmsMask);
+    #nlms_single_binary = nlms_single > meanResponse;
 
 
 
 if __name__ == "__main__":
-    if True:
+    if False:
         image = io.imread("CK001HelaOsmo_20_single.tif")
     else:
         image = io.imread("CK001HelaOsmo_20_single_croped.tif")
