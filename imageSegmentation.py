@@ -6,7 +6,7 @@ from skimage.filters import threshold_otsu
 def thresholdOtsu(imageIn):
     # the implementation in the original code seems
     # unnecessarily complicated
-    notImplemented("custom otsu not implemended; using skimage.filters.")
+    notImplemented("custom otsu not implemented; using skimage.filters.")
     return threshold_otsu(imageIn)
 """
 

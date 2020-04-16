@@ -16,7 +16,7 @@ from OrientationSpaceFilter import OrientationSpaceFilter
 from ckLogging import notImplemented
 from imageSegmentation import *
 from mathfun import *
-
+from nonLocalMaximaSuppressionPrecise import *
 
 
 def tprint(string):
@@ -139,6 +139,7 @@ def steerableAROSD(I, ip):
 
     # %% Setup orientation analysis problem
     nanTemplate = np.zeros(nlmsMask.shape)
+    nanTemplate[:] = np.NaN
     a_hat = np.rollaxis(a_hat, 2, 0)
     a_hat = a_hat[:, nlmsMask]
 
@@ -146,11 +147,14 @@ def steerableAROSD(I, ip):
     R_res = R.getResponseAtOrderFT(ip["responseOrder"],2)
     maximum_single_angle = nanTemplate
 
+
     maximum_single_angle[nlmsMask] = wraparoundN(-np.angle(a_hat[1,:])/2 ,
                                                   0,
                                                   np.pi)
 
-    #nlms_single = nonLocalMaximaSuppressionPrecise(real(R_res.a),maximum_single_angle,[],[],nlmsMask);
+    nlms_single = nonLocalMaximaSuppressionPrecise(R_res.a.real,
+                                                   maximum_single_angle,
+                                                   mask = nlmsMask);
     #nlms_single_binary = nlms_single > meanResponse;
 
 
@@ -163,7 +167,7 @@ if __name__ == "__main__":
 
     image[image<0] = 0
     ip = DefaultParams()
-    ip["diagnosticMode"] = True
+    ip["diagnosticMode"] = False
     steerableAROSD(image, ip)
     print("End of script.")
     plt.show()
