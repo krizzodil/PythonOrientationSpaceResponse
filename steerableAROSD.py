@@ -6,22 +6,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import patches
 
-from skimage import io
+
 from skimage.morphology import *
 from skimage.measure import label, regionprops, regionprops_table
 from scipy import misc, fftpack
 
-from parameters import DefaultParams
+
 from OrientationSpaceFilter import OrientationSpaceFilter
 from ckLogging import notImplemented
 from imageSegmentation import *
 from mathfun import *
 from nonLocalMaximaSuppressionPrecise import *
 
-
-def tprint(string):
-    if TEST:
-        print(string)
 
 def steerableAROSD(I, ip):
     #if ip["diagnosticMode"]:
@@ -159,15 +155,3 @@ def steerableAROSD(I, ip):
 
 
 
-if __name__ == "__main__":
-    if False:
-        image = io.imread("CK001HelaOsmo_20_single.tif")
-    else:
-        image = io.imread("CK001HelaOsmo_20_single_croped.tif")
-
-    image[image<0] = 0
-    ip = DefaultParams()
-    ip["diagnosticMode"] = False
-    steerableAROSD(image, ip)
-    print("End of script.")
-    plt.show()
