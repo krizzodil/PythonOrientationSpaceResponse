@@ -72,15 +72,7 @@ def nonLocalMaximaSuppressionPrecise(rotationResponse,
         # % angleIdx(angleIdx < 0) = angleIdx(angleIdx < 0)+period;
 
     # % Offset by 1 due to padding
-    #x, y = np.meshgrid( np.arange(2, nx+1+1), np.arange(2, ny+1+1) )
-
-    if True:
-        # first try, caused weird problems in interpolations
-        x, y = np.meshgrid(np.arange(1,nx+1), np.arange(1,ny+1))
-    else:
-        # attempt to solve the problem,
-        # must be flipped for scipy.interpolate.interpn for some reason
-        x, y = np.meshgrid(np.arange(nx,0,-1), np.arange(ny, 0, -1))
+    x, y = np.meshgrid(np.arange(1,nx+1), np.arange(1,ny+1), indexing="ij")
 
 
     x_offset = np.cos(offsetAngle)
@@ -140,98 +132,41 @@ def nonLocalMaximaSuppressionPrecise(rotationResponse,
     x_offset = 0
     y_offset = 0
 
-    print(x.shape)
-    print(y.shape)
-    print(angleIdx.shape)
-    print(rotationResponse.shape)
-
-
 
     x_ = np.arange(rotationResponse.shape[0])
     y_ = np.arange(rotationResponse.shape[1])
     z_ = np.arange(rotationResponse.shape[2])
-    print( x_.shape )
-    print( y_.shape )
-    print( z_.shape )
-
-    print(np.nanmin(x), np.nanmax(x))
-    print(np.nanmin(y), np.nanmax(y))
-    print(np.nanmin(angleIdx), np.nanmax(angleIdx))
 
 
     if angleMultiplier != 1:
         notImplemented("Cubic 3D interpolation not available in Python, using linear.")
         interpMethod = "linear"
-        if True:
-            if True:
-                #rotationResponse = np.ones(rotationResponse.shape) * np.arange(np.flip(rotationResponse.shape[2]))[None,None,:]
-                interpolator = RegularGridInterpolator( (x_, y_, z_),
-                                                        rotationResponse,
-                                                        method = interpMethod,
-                                                        fill_value = 0,
-                                                        bounds_error=False)
-            else:
-                interpolator = LinearNDInterpolator( (x_, y_, z_),
-                                                     rotationResponse,
-                                                     fill_value = 0)
+        interpolator = RegularGridInterpolator( (x_, y_, z_),
+                                                rotationResponse,
+                                                method = interpMethod,
+                                                fill_value = 0,
+                                                bounds_error=False)
+        A = interpolator( (x, y, angleIdx) )
 
-            """            
-            x, y = np.meshgrid( np.arange(512), np.arange(512) )
-            x = np.tile(x[:,:,None], 53 )
-            y = np.tile(y[:,:,None], 53)
-            x = np.expand_dims(x, 2)
-            y = np.expand_dims(y, 2)
+    else:
+        raise NotImplementedError("angleMultiplier == 1 not implemented.")
+        """    
+        %% Use Fourier interpolation
+            A = zeros(size(x));
+        %     parfor d=1:size(x,4)
+            parfor j=1:size(x,4)*nO
+                G = zeros(rotationResponseSize);
+        %         for o=1:nO
+                    for a=1:nAngles
+                        G(:,:,a) = interp2(rotationResponse(:,:,a),squeeze(x(:,:,j)),squeeze(y(:,:,j)),interpMethod,0);
+                    end
+                    A(:,:,j) = interpft1([0 pi],shiftdim(G,2),shiftdim(angleIdx(:,:,j),-1));
+        %         end
+            end"""
 
-            angleIdx = np.ones( (512,512) )[:,:,None] * np.arange(53)[None, None, :]
-            angleIdx = np.expand_dims(angleIdx, 2)"""
+    nlms = A[:,:,:,1]
+    suppress = np.logical_or(nlms < A[:,:,:,0],  nlms < A[:,:,:,2])
+    nlms[suppress] = suppressionValue
+    notImplemented("nlms: Additional return values not implemented.")
+    return(nlms)
 
-            #print(x.shape, y.shape, angleIdx.shape)
-
-
-            A = interpolator( (y, x, angleIdx) )
-
-
-            #angleIdx = np.ones((512,512, 1,53))*np.arange(53)[None,None, None,:]
-            for i in range(0, A.shape[-1]):
-                #angleIdx = angleIdx*-1 + np.nanmin(angleIdx) + np.nanmax(angleIdx)
-                #points = np.array([x[:,:,0,i], y[:,:,0,i], angleIdx[:,:,0,i]])
-                #points = np.moveaxis(points, 0, 2)
-                #print(points.shape)
-                #A = interpolator(points)
-                #A = interpolator( (x[:,:,0,i], y[:,:,0,i], angleIdx[:,:,0,i]) )
-                imsave(os.path.join("outputImages/pyAreg", "pyAiter_%d.tif"%i),
-                       A[:,:,0,i].astype("single"))
-
-        else:
-            #angleIdx = np.ones((512,512,1,3))
-            A = interpn(
-                (y_, x_, z_),
-                rotationResponse,
-                #(x, y, angleIdx),
-                (x[:,:,0,1], y[:,:,0,1], angleIdx[:,:,0,1]),
-                method=interpMethod,
-                fill_value=0,
-                bounds_error=False)
-
-            #imsave(os.path.join("outputImages/pyA", "pyA_single1.tif"),A.astype("single"))
-
-            print(A.shape)
-            for i in range(0, A.shape[-1]):
-                imsave(os.path.join("outputImages/pyA", "pyA_%d.tif"%i),
-                       A[:,:,0,i].astype("single"))
-
-        for i in range(0, x.shape[3]):
-            imsave(os.path.join("outputImages/pyx", "pyx_%d.tif" % i),
-                   x[:, :, 0, i].astype("single"))
-
-        for i in range(0, y.shape[3]):
-            imsave(os.path.join("outputImages/pyy", "pyy_%d.tif" % i),
-                   y[:, :, 0, i].astype("single"))
-
-        for i in range(0, angleIdx.shape[3]):
-            imsave(os.path.join("outputImages/pyangleIdx", "pyangleIdx_%d.tif" % i),
-                   angleIdx[:, :, 0, i].astype("single"))
-
-        for i in range(0, rotationResponse.shape[2]):
-            imsave(os.path.join("outputImages/pyRR", "pyRRx_%d.tif" % i),
-                   rotationResponse[:, :, i].astype("single"))

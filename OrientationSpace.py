@@ -2,6 +2,7 @@ import collections
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import cm
 from scipy import fftpack
 
 from ckLogging import notImplemented
@@ -125,4 +126,37 @@ def getFrequencySpaceCoordinates(N=1024):
 def kernel(fc, bf, K, angle, N):
     """ Still gotta figure out what's happening here exactly. """
     pass
-    
+
+
+def blendOrientationMap( theta, res=np.array([]), cm=cm.get_cmap("hsv") ):
+    #raise NotImplementedError("I stopped implementing blendOrientationMap, "
+    #                          "because it looks useless.")
+    if res.size == 0:
+        res = np.ones(theta.shape)
+
+    theta_not_nan = np.isnan(theta)
+
+    scaled = theta / np.pi
+
+    theta_mapped = cm(scaled)[:,:,0:3]
+    theta_mapped[theta_not_nan] = np.NaN
+
+    res = res.real
+    res[res<0] = np.NaN
+    res = res / np.nanmax(res)
+
+    blended_map = theta_mapped * res[:,:,None]
+
+    return blended_map
+
+
+
+
+
+
+
+
+
+
+
+

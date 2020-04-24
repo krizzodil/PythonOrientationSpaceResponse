@@ -4,7 +4,8 @@ import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib import patches
+import colorcet
+from matplotlib import patches, cm
 
 
 from skimage.morphology import *
@@ -17,6 +18,7 @@ from ckLogging import notImplemented
 from imageSegmentation import *
 from mathfun import *
 from nonLocalMaximaSuppressionPrecise import *
+import OrientationSpace
 
 
 def steerableAROSD(I, ip):
@@ -88,8 +90,10 @@ def steerableAROSD(I, ip):
             plt.title("meanResponse > meanThreshold")
             plt.imshow(meanResponseMask)
             plt.show(block=False)
+
         if ip["mask"]:
             meanResponseMask = np.logical_and(meanResponseMask, ip["mask"])
+
         if ip["diagnosticMode"]:
             plt.figure()
             plt.title("meanResponseMask")
@@ -151,7 +155,29 @@ def steerableAROSD(I, ip):
     nlms_single = nonLocalMaximaSuppressionPrecise(R_res.a.real,
                                                    maximum_single_angle,
                                                    mask = nlmsMask);
-    #nlms_single_binary = nlms_single > meanResponse;
+    nlms_single_binary = nlms_single > meanResponse[:,:,None]
+    if True: #ip["diagnosticMode"]:
+        cm = colorcet.m_CET_C2s   #m_CET_CBC2 matlab original
+
+
+        maximum_single_angle_map = OrientationSpace.blendOrientationMap(
+            maximum_single_angle, R_res.interpft1(maximum_single_angle), cm);
+
+        plt.figure()
+        plt.title("maximum_single_angle")
+        plt.imshow(maximum_single_angle_map)
+        plt.show(block=False)
+
+        plt.figure()
+        plt.title("nlms_single")
+        plt.imshow(nlms_single[:,:,0])
+        plt.show(block=False)
+
+        plt.figure()
+        plt.title("nlms_single_binary")
+        plt.imshow(nlms_single_binary[:,:,0])
+        plt.show(block=False)
+
 
 
 

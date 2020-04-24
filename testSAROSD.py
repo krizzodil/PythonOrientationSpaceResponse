@@ -1,4 +1,4 @@
-
+import logging
 from skimage import io
 
 from steerableAROSD import *
@@ -9,6 +9,7 @@ from ckLogging import notImplemented
 
 
 if __name__ == "__main__":
+    logging.root.setLevel(logging.INFO)
     if False:
         image = io.imread("CK001HelaOsmo_20_single.tif")
     else:

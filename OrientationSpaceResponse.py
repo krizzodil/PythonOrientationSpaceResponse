@@ -1,9 +1,10 @@
 
 import numpy as np
+import logging
 from scipy import fftpack
 
 import OrientationSpaceFilter
-
+import mathfun
 
 
 class OrientationSpaceResponse:
@@ -82,3 +83,36 @@ class OrientationSpaceResponse:
                                                     fftpack.ifft(a_hat, axis=2)
                                                     )
             return Response
+
+
+    def interpft1(self, xq):
+        if xq.ndim == 3:
+            xq = np.moveaxis(xq, 2, 0)
+        else:
+            xq = np.expand_dims(xq, 0)
+
+        if np.all(np.isreal(xq)):
+            # % Only ridge interpolation is requested
+            logging.info("OrientationSpaceResponse.interpft1(): "
+                         "np.all(np.isreal(xq) == True")
+            vq = mathfun.interpft1(np.array([0, np.pi]),
+                                   np.moveaxis(self.a, 2, 0),
+                                   xq,
+                                   'horner')
+        else:
+            # % Ridge
+            logging.info("OrientationSpaceResponse.interpft1(): "
+                         "np.all(np.isreal(xq) == False")
+            vq = mathfun.interpft1(np.array([0, np.pi]),
+                                   np.moveaxiy(self.a.real, 2, 0),
+                                   xq,
+                                   'horner')
+            # % and Edge interpolation is requested
+            vq_imag = mathfun.interpft1(np.array([0, 2*np.pi]),
+                                        np.moveaxiy(self.a.imag, 2, 0),
+                                        xq.imag,
+                                        'horner')
+            vq = vq + vq_imag * 1j
+
+        vq = vq[0]
+        return vq
