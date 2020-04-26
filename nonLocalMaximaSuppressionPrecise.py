@@ -32,6 +32,7 @@ def nonLocalMaximaSuppressionPrecise(rotationResponse,
         offsetAngle[offsetAngle==np.NaN] = np.nanmean(theta)
 
     rotationResponseSize = rotationResponse.shape
+
     if rotationResponse.ndim < 3 :
         rotationResponseSize[2] = 1
 
@@ -104,13 +105,11 @@ def nonLocalMaximaSuppressionPrecise(rotationResponse,
 
     x = np.block( [ Xminus[:,:,None], Xstack, Xplus[:,:,None] ] )
     y = np.block( [ Yminus[:,:,None], Ystack, Yplus[:,:,None] ] )
-    x = np.expand_dims(x, 2)
-    y = np.expand_dims(y, 2)
 
     # must be flipped for scipy.interpolate.interpn for some reason
     # or not: angleIdx = angleIdx*-1 + np.nanmin(angleIdx) + np.nanmax(angleIdx)
 
-    angleIdx = np.tile(angleIdx[:,:,None, None], 3 )
+    angleIdx = np.tile(angleIdx[:,:, None], 3 )
 
     """
     if(nargout > 1)
@@ -136,7 +135,6 @@ def nonLocalMaximaSuppressionPrecise(rotationResponse,
     x_ = np.arange(rotationResponse.shape[0])
     y_ = np.arange(rotationResponse.shape[1])
     z_ = np.arange(rotationResponse.shape[2])
-
 
     if angleMultiplier != 1:
         notImplemented("Cubic 3D interpolation not available in Python, using linear.")
@@ -164,8 +162,8 @@ def nonLocalMaximaSuppressionPrecise(rotationResponse,
         %         end
             end"""
 
-    nlms = A[:,:,:,1]
-    suppress = np.logical_or(nlms < A[:,:,:,0],  nlms < A[:,:,:,2])
+    nlms = A[:,:,1]
+    suppress = np.logical_or(nlms < A[:,:,0],  nlms < A[:,:,2])
     nlms[suppress] = suppressionValue
     notImplemented("nlms: Additional return values not implemented.")
     return(nlms)

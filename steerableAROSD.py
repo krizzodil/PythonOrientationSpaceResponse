@@ -11,7 +11,7 @@ from matplotlib import patches, cm
 from skimage.morphology import *
 from skimage.measure import label, regionprops, regionprops_table
 from scipy import misc, fftpack
-
+from scipy.ndimage import correlate
 
 from OrientationSpaceFilter import OrientationSpaceFilter
 from ckLogging import notImplemented
@@ -155,8 +155,10 @@ def steerableAROSD(I, ip):
     nlms_single = nonLocalMaximaSuppressionPrecise(R_res.a.real,
                                                    maximum_single_angle,
                                                    mask = nlmsMask);
-    nlms_single_binary = nlms_single > meanResponse[:,:,None]
-    if True: #ip["diagnosticMode"]:
+    nlms_single_binary = nlms_single > meanResponse
+
+
+    if ip["diagnosticMode"]:
         cm = colorcet.m_CET_C2s   #m_CET_CBC2 matlab original
 
 
@@ -170,14 +172,62 @@ def steerableAROSD(I, ip):
 
         plt.figure()
         plt.title("nlms_single")
-        plt.imshow(nlms_single[:,:,0])
+        plt.imshow(nlms_single)
         plt.show(block=False)
 
         plt.figure()
         plt.title("nlms_single_binary")
-        plt.imshow(nlms_single_binary[:,:,0])
+        plt.imshow(nlms_single_binary)
+        plt.show(block=False)
+
+    # %% Determine nlmsThreshold
+    if not np.all(ip["nlmsThreshold"]):
+        # %% Attenuate meanResponse by neighbor occupancy
+        nhood_filter = np.array([[1, 1, 1],[1, 0, 1],[1, 1, 1]])
+        nhood_occupancy = correlate(
+            nlms_single_binary.astype(np.double),
+            nhood_filter,
+            mode='constant',
+            cval=0
+            )/8
+        # % double the occupancy for accelerated attenuation
+        nhood_occupancy = nhood_occupancy*2
+        attenuatedMeanResponse = (1-nhood_occupancy)*meanResponse;
+        attenuatedMeanResponse[attenuatedMeanResponse<0] = 0
+
+        nlmsThreshold = attenuatedMeanResponse
+    else:
+        # % User defined nlmsThreshold
+        nlmsThreshold = ip["nlmsThreshold"]
+
+    if ip["diagnosticMode"]:
+
+        plt.figure()
+        plt.title("nlmsThreshold")
+        plt.imshow(nlmsThreshold)
         plt.show(block=False)
 
 
+    # %% Calculate high resolution maxima
 
+    # % Adapt length
+    if ip["adaptLengthInRegime"]:
+        # % Find orientation maxima with nlmsMask only
+        interpftValues = interpft_extrema(a_hat,
+                                          0,
+                                          True,
+                                          None,
+                                          False
+                                          );
+        maxima_highest_temp = interpftValues["maxima"]
+        minima_highest_temp = interpftValues["minima"]
+        print(maxima_highest_temp.shape)
+        print(minima_highest_temp.shape)
+        # plt.figure()
+        # plt.imshow(maxima_highest_temp[:,0:100])
+        # plt.show(block=False)
+        # plt.figure()
+        # plt.imshow(minima_highest_temp[:,0:100])
+        # plt.show(block=False)
 
+        # % Count
