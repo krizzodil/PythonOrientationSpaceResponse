@@ -1,23 +1,13 @@
-
-import logging
-import copy
-
-import numpy as np
-import matplotlib.pyplot as plt
 import colorcet
-from matplotlib import patches, cm
 
-
-from skimage.morphology import *
-from skimage.measure import label, regionprops, regionprops_table
-from scipy import misc, fftpack
+from skimage.measure import regionprops
 from scipy.ndimage import correlate
 
 from OrientationSpaceFilter import OrientationSpaceFilter
-from ckLogging import notImplemented
-from imageSegmentation import *
-from mathfun import *
-from nonLocalMaximaSuppressionPrecise import *
+from common.imageSegmentation import *
+from common.mathfun import *
+from common.nonLocalMaximaSuppressionPrecise import *
+import orientationSpace.diffusion
 import OrientationSpace
 
 
@@ -50,6 +40,7 @@ def steerableAROSD(I, ip):
     if ip["diagnosticMode"]:
         plt.figure()
         plt.imshow(meanResponse.real)
+        io.imsave("py01_meanResponse.tif", meanResponse.real.astype(np.single))
         plt.title("meanResponse")
         plt.show(block=False)
 
@@ -89,6 +80,7 @@ def steerableAROSD(I, ip):
             plt.figure()
             plt.title("meanResponse > meanThreshold")
             plt.imshow(meanResponseMask)
+            io.imsave("py02_meanResponseMask.tif", meanResponseMask.astype(np.int8))
             plt.show(block=False)
 
         if ip["mask"]:
@@ -98,6 +90,8 @@ def steerableAROSD(I, ip):
             plt.figure()
             plt.title("meanResponseMask")
             plt.imshow(meanResponseMask)
+            io.imsave("py03_meanResponseMask.tif",
+                      meanResponseMask.astype(np.int8))
             plt.show(block=False)
 
         # % For NLMS(nlmsMask)
@@ -123,6 +117,8 @@ def steerableAROSD(I, ip):
             plt.figure()
             plt.title("meanResponseMaskDilated")
             plt.imshow(meanResponseMaskDilated)
+            io.imsave("py04_meanResponseMaskDilated.tif",
+                      meanResponseMaskDilated.astype(np.int8))
             rect = plt.Rectangle((bbox[1],bbox[0]),
                                  bbox[3]-bbox[1],
                                  bbox[2]-bbox[0],
@@ -135,6 +131,7 @@ def steerableAROSD(I, ip):
         # % User defined nlmsMask
         nlmsMask = ip["nlmsMask"]
         diag_rp  = regionprops(nlmsMask)[0]
+
 
 
     # %% Setup orientation analysis problem
@@ -168,16 +165,23 @@ def steerableAROSD(I, ip):
         plt.figure()
         plt.title("maximum_single_angle")
         plt.imshow(maximum_single_angle_map)
+        forSave = maximum_single_angle_map / np.nanmax(maximum_single_angle_map) * 255
+        io.imsave("py05_maximum_single_angle_map.tif",
+                  forSave.astype(np.int8))
         plt.show(block=False)
 
         plt.figure()
         plt.title("nlms_single")
         plt.imshow(nlms_single)
+        io.imsave("py06_nlms_single.tif",
+                  nlms_single.astype(np.single))
         plt.show(block=False)
 
         plt.figure()
         plt.title("nlms_single_binary")
         plt.imshow(nlms_single_binary)
+        io.imsave("py07_nlms_single_binary.tif",
+                  nlms_single_binary.astype(np.int8))
         plt.show(block=False)
 
     # %% Determine nlmsThreshold
@@ -201,15 +205,15 @@ def steerableAROSD(I, ip):
         nlmsThreshold = ip["nlmsThreshold"]
 
     if ip["diagnosticMode"]:
-
         plt.figure()
         plt.title("nlmsThreshold")
-        plt.imshow(nlmsThreshold)
+        plt.imshow(nlmsThreshold.real)
+        io.imsave("py08_nlmsThreshold.tif",
+                  nlmsThreshold.real.astype(np.single))
         plt.show(block=False)
 
-
     # %% Calculate high resolution maxima
-
+    """
     # % Adapt length
     if ip["adaptLengthInRegime"]:
         # % Find orientation maxima with nlmsMask only
@@ -221,13 +225,65 @@ def steerableAROSD(I, ip):
                                           );
         maxima_highest_temp = interpftValues["maxima"]
         minima_highest_temp = interpftValues["minima"]
-        print(maxima_highest_temp.shape)
-        print(minima_highest_temp.shape)
+
         # plt.figure()
-        # plt.imshow(maxima_highest_temp[:,0:100])
+        # # plt.imshow(maxima_highest_temp[:,0:100])
+        # plt.hist(maxima_highest_temp.flatten(), range=(-500,500))
         # plt.show(block=False)
         # plt.figure()
-        # plt.imshow(minima_highest_temp[:,0:100])
-        # plt.show(block=False)
+        # # plt.imshow(minima_highest_temp[:,0:100])
+        # plt.hist(minima_highest_temp.flatten(), range=(-500,500))
+        # plt.show()
 
         # % Count
+        n_maxima_highest_temp = maxima_highest_temp.shape[0] \
+                                - np.sum(np.isnan(maxima_highest_temp), 0)
+        K_high = F.K
+        K_low = np.maximum(n_maxima_highest_temp - 1,
+                           ip["responseOrder"])
+        #warning('off','halleyft:maxIter');
+        K_high, K_low = orientationSpace.diffusion.findRegimeBifurcation(
+                                                        a_hat,
+                                                        F.K,
+                                                        K_high,
+                                                        K_low,
+                                                        maxima_highest_temp,
+                                                        minima_highest_temp,
+                                                        None,
+                                                        0.1,
+                                                        True)
+
+        
+        best_derivs = orientationSpace.diffusion.orientationMaximaFirstDerivative(a_hat,F.K,maxima_highest_temp);
+        best_abs_derivs = abs(best_derivs);
+        best_K = repmat(F.K,size(best_derivs));
+        best_maxima = maxima_highest_temp;
+        maxima_working = maxima_highest_temp;
+        for K=F.K:-ip.Results.K_sampling_delta:1
+            s = K > K_high;
+            lower_a_hat = orientationSpace.getResponseAtOrderVecHat(a_hat(:,s),F.K,K);
+            [new_derivs(:,s),~,maxima_working(:,s)] = orientationSpace.diffusion.orientationMaximaFirstDerivative(lower_a_hat,K,maxima_working(:,s),[],true);
+            new_abs_derivs(:,s) = abs(new_derivs(:,s));
+            better(:,s) = new_abs_derivs(:,s) < best_abs_derivs(:,s);
+
+            % Update better
+            best_abs_derivs(better) = new_abs_derivs(better);
+            best_derivs(better) = new_derivs(better);
+            best_K(better) = K;
+            best_maxima(better) = maxima_working(better);
+        end
+
+        maxima_highest_temp = best_maxima / 2;
+    else
+        % Find orientation maxima with nlmsMask only
+        maxima_highest_temp = interpft_extrema(a_hat,1,true,[],false)/2;
+        best_K = repmat(F.K,size(maxima_highest_temp));
+    end
+
+    maxima_highest = nanTemplate(:,:,ones(size(maxima_highest_temp,1),1));
+    maxima_highest = shiftdim(maxima_highest,2);
+    for i=1:size(maxima_highest_temp,1)
+        maxima_highest(i,nlmsMask) = maxima_highest_temp(i,:);
+    end
+    maxima_highest = shiftdim(maxima_highest,1);
+        """

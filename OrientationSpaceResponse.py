@@ -4,7 +4,7 @@ import logging
 from scipy import fftpack
 
 import OrientationSpaceFilter
-import mathfun
+from common import mathfun
 
 
 class OrientationSpaceResponse:
@@ -108,7 +108,7 @@ class OrientationSpaceResponse:
                                    xq,
                                    'horner')
             # % and Edge interpolation is requested
-            vq_imag = mathfun.interpft1(np.array([0, 2*np.pi]),
+            vq_imag = mathfun.interpft1(np.array([0, 2 * np.pi]),
                                         np.moveaxiy(self.a.imag, 2, 0),
                                         xq.imag,
                                         'horner')

@@ -454,8 +454,8 @@ def interpft_extrema(x,dim,sorted=False,TOL=None,dofft=True):
     dx2_h = x_h * (-freq ** 2)
 
     # % use companion matrix approach
-    dx_h = - fftpack.fftshift(dx_h,0)
-    # dx_h = dx_h(:,:) # useless line?
+    dx_h =  -fftpack.fftshift(dx_h,0)
+    dx_h = dx_h[:]
 
     output_size1 = output_size[0]
     nProblems = np.prod(output_size[1:])
@@ -481,7 +481,6 @@ def interpft_extrema(x,dim,sorted=False,TOL=None,dofft=True):
     logging.info("interpft_extrema: block with np.roots finished. ")
 
     r = np.concatenate(list(results), axis=1)
-
     # % magnitude
     magnitude = np.absolute(np.log( np.absolute(r) ))
     # % keep only the real answers
@@ -500,7 +499,6 @@ def interpft_extrema(x,dim,sorted=False,TOL=None,dofft=True):
     # % angle will return angle between -pi and pi
     
     r = -np.angle( r[real_map] )
-    
     # % Map angles to between 0 and 2 pi, moving negative values up
     # % a period
     neg_extrema = r < 0
@@ -512,7 +510,6 @@ def interpft_extrema(x,dim,sorted=False,TOL=None,dofft=True):
 
     # % Use Horner's method to compute 2nd derivative value
     dx2 = interpft1(np.array([0, 2*np.pi]),dx2_h,extrema,'horner_freq');
-
     # % dx2 could be equal to 0, meaning inconclusive type
     # % local maxima is when dx == 0, dx2 < 0
     output_template = np.empty( output_size )
@@ -528,7 +525,7 @@ def interpft_extrema(x,dim,sorted=False,TOL=None,dofft=True):
     # % local minima is when dx == 0, dx2 > 0
     minima[minima_map] = extrema[minima_map]
 
-    if sorted:
+    if sorted: #if(nargout > 2 || nargout == 0 || sorted)
 	    # % calculate the value of the extrema if needed
         
         # % Use Horner's method to compute value at extrema
@@ -543,36 +540,42 @@ def interpft_extrema(x,dim,sorted=False,TOL=None,dofft=True):
         maxima_value = output_template[:]
         maxima_value[maxima_map] = extrema_value[maxima_map]
 
-        minima_value = output_template[:]
-        minima_value[minima_map] = extrema_value[minima_map]
+        if True: # if(nargout > 3 || nargout > 1 && sorted || nargout == 0)
+            minima_value = output_template[:]
+            minima_value[minima_map] = extrema_value[minima_map]
 
-        maxima_value_inf = maxima_value[:]
-        maxima_value_inf[np.isnan(maxima_value_inf)] = -np.inf
+        if sorted:
+            maxima_value_inf = maxima_value[:]
+            maxima_value_inf[np.isnan(maxima_value_inf)] = -np.inf
 
-        maxima, maxima_value = sortMatrices(maxima_value_inf,
-                                            [maxima, maxima_value])
-        maxima_value_inf = 0 # clear
-        numMax = np.nansum(maxima_map, axis=0)
-        numMax = np.nanmax(numMax)
-        maxima = maxima[0:numMax,:]
-        maxima_value = maxima_value[0:numMax,:]
+            maxima, maxima_value = sortMatrices(maxima_value_inf,
+                                                [maxima, maxima_value])
+            maxima_value_inf = 0 # clear
+            numMax = np.nansum(maxima_map, axis=0)
+            numMax = np.nanmax(numMax)
+            maxima = maxima[0:numMax,:]
+            maxima_value = maxima_value[0:numMax,:]
 
-        minima_value_inf = minima_value[:]
-        minima_value_inf[np.isnan(minima_value_inf)] = np.inf
+            if True:  # if (nargout > 1)
+                minima_value_inf = minima_value[:]
+                minima_value_inf[np.isnan(minima_value_inf)] = np.inf
+                minima, minima_value = sortMatrices(minima_value_inf,
+                                                    [minima, minima_value])
+                inima_value_inf = 0 # clear
+                numMin = np.nansum(minima_map, axis=0)
+                numMin = np.nanmax(numMin)
+                minima = minima[0:numMin,:]
+                minima_value = minima_value[0:numMin,:]
 
-        minima, minima_value = sortMatrices(minima_value_inf,
-                                            [minima, minima_value])
+            #maxima_value = shiftdim(maxima_value,unshift);
+            #minima_value = shiftdim(minima_value,unshift);
 
-        
-        minima_value_inf = 0 # clear
-        numMin = np.nansum(minima_map, axis=0)
-        numMin = np.nanmax(numMin)
-        minima = minima[0:numMin,:]
-        minima_value = minima_value[0:numMin,:]
-
-        #maxima_value = shiftdim(maxima_value,unshift);
-        #minima_value = shiftdim(minima_value,unshift);
-
+            plt.figure()
+            plt.hist(maxima.flatten(), range=(-500, 500))
+            plt.show(block=False)
+            plt.figure()
+            plt.hist(minima.flatten(), range=(-500, 500))
+            plt.show()
         """
         if(nargout > 4)
             % calculate roots which are not maxima or minima
@@ -592,40 +595,6 @@ def interpft_extrema(x,dim,sorted=False,TOL=None,dofft=True):
             
             #other = shiftdim(other,unshift);
             #other_value = shiftdim(other_value,unshift);
-        end
-    end
-    """
-
-
-    """
-    NOT IMPLEMENTED
-    if(nargout == 0)
-        % plot if no outputs requested
-        if(sorted)
-            real_maxima = maxima(:);
-            real_maxima_value = maxima_value(:);
-        else
-            real_maxima = maxima(maxima_map);
-            real_maxima_value = real(maxima_value(maxima_map));
-        end
-        if(~isempty(real_maxima))
-        % Maxima will be green
-            plot([real_maxima real_maxima]',ylim,'g');
-            plot(real_maxima,real_maxima_value,'go');
-        end
-        if(sorted)
-            real_minima = minima(:);
-            real_minima_value = minima_value(:);
-        else
-            real_minima = minima(minima_map);
-            real_minima_value = real(minima_value(minima_map));
-        end
-        if(~isempty(real_minima))
-	    % Minima will be red
-            plot([real_minima real_minima]',ylim,'r');
-            plot(real_minima,real_minima_value,'ro');
-        elseif(~isempty(real_maxima))
-            warning('No extrema');
         end
     end
     """

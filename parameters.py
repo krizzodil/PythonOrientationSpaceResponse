@@ -1,8 +1,7 @@
 
 from collections import UserDict
-import numpy as np
 
-from imageSegmentation import *
+from common.imageSegmentation import *
 
 class DefaultParams(UserDict):
     """ Based on arguments of 
