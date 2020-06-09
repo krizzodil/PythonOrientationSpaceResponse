@@ -30,13 +30,13 @@ package = steerableAROSD(image, ip)
 The function ``steerableAROSD()`` just requires an image in form of a 2D 
 numpy-array and a dict() holding all the parameters. The parameters and their
 default values are specified and documented in the class ``DefaultParams`` in
-the parameters.py-file. The default values are the same as in 
+the [parameters.py](parameters.py)-file. The default values are the same as in 
 Mark Kittisopikul's original Matlab code. The returned package is a dictionary
 holding intermediate output images under keys resembling figure titles of the
 original code.
 
 Ah, there will also be plenty of warnings be printed to the console, it's a bit
-messy at the moment, sorry of that!
+messy at the moment, sorry for that!
 
 
 #### License
