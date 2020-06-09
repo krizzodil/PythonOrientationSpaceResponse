@@ -12,6 +12,9 @@ import OrientationSpace
 
 
 def steerableAROSD(I, ip):
+
+    returnPackage = {}
+
     #if ip["diagnosticMode"]:
         #plt.ion()
     if not ip["response"]:
@@ -37,10 +40,11 @@ def steerableAROSD(I, ip):
     a_hat = fftpack.fft(R.a.real, axis=2)
 
     meanResponse = a_hat[:,:,0]/a_hat.shape[2]
+
+    returnPackage["meanResponse"] = meanResponse
     if ip["diagnosticMode"]:
         plt.figure()
         plt.imshow(meanResponse.real)
-        io.imsave("py01_meanResponse.tif", meanResponse.real.astype(np.single))
         plt.title("meanResponse")
         plt.show(block=False)
 
@@ -85,7 +89,7 @@ def steerableAROSD(I, ip):
 
         if ip["mask"]:
             meanResponseMask = np.logical_and(meanResponseMask, ip["mask"])
-
+        returnPackage["meanResponseMask"] = meanResponseMask
         if ip["diagnosticMode"]:
             plt.figure()
             plt.title("meanResponseMask")
@@ -105,6 +109,7 @@ def steerableAROSD(I, ip):
         if ip["mask"]:
             meanResponseMaskDilated = np.logical_and(meanResponseMaskDilated,
                                                      ip["mask"])
+        returnPackage["meanResponseMaskDilated"] = meanResponseMaskDilated
         if ip["diagnosticMode"]:
             diag_rp = regionprops(label(meanResponseMaskDilated))
             areas = [region.area for region in diag_rp]
@@ -117,8 +122,8 @@ def steerableAROSD(I, ip):
             plt.figure()
             plt.title("meanResponseMaskDilated")
             plt.imshow(meanResponseMaskDilated)
-            io.imsave("py04_meanResponseMaskDilated.tif",
-                      meanResponseMaskDilated.astype(np.int8))
+            # io.imsave("py04_meanResponseMaskDilated.tif",
+            #           meanResponseMaskDilated.astype(np.int8))
             rect = plt.Rectangle((bbox[1],bbox[0]),
                                  bbox[3]-bbox[1],
                                  bbox[2]-bbox[0],
@@ -154,7 +159,8 @@ def steerableAROSD(I, ip):
                                                    mask = nlmsMask);
     nlms_single_binary = nlms_single > meanResponse
 
-
+    returnPackage["maximum_single_angle_map"] = maximum_single_angle
+    returnPackage["nlms_single"] = nlms_single
     if ip["diagnosticMode"]:
         cm = colorcet.m_CET_C2s   #m_CET_CBC2 matlab original
 
@@ -165,9 +171,9 @@ def steerableAROSD(I, ip):
         plt.figure()
         plt.title("maximum_single_angle")
         plt.imshow(maximum_single_angle_map)
-        forSave = maximum_single_angle_map / np.nanmax(maximum_single_angle_map) * 255
-        io.imsave("py05_maximum_single_angle_map.tif",
-                  forSave.astype(np.int8))
+        # forSave = maximum_single_angle_map / np.nanmax(maximum_single_angle_map) * 255
+        # io.imsave("py05_maximum_single_angle_map.tif",
+        #           forSave.astype(np.int8))
         plt.show(block=False)
 
         plt.figure()
@@ -213,6 +219,8 @@ def steerableAROSD(I, ip):
         plt.show(block=False)
 
     # %% Calculate high resolution maxima
+
+    return returnPackage
     """
     # % Adapt length
     if ip["adaptLengthInRegime"]:

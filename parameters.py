@@ -124,7 +124,7 @@ class DefaultParams(UserDict):
             "useParallelPool":          True,
             "maskDilationDiskRadius":   3,
             "maskFillHoles":            False,
-            "diagnosticMode":           True,
+            "diagnosticMode":           False,
             "K_sampling_delta":         0.1,
             "responseOrder":            3,
             "bridgingLevels":           2,
