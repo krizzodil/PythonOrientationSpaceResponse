@@ -19,7 +19,7 @@ additional packages 'colorcet' and 'scikit-image'.
 
 Just download and copy the repository into the directory you're working on.
 
-The following snippet should give you an idea about how to use the code.
+The following snippet should give you an idea about how to use the code:
 ````
 from steerableAROSD import steerableAROSD
 from parameters import DefaultParams
